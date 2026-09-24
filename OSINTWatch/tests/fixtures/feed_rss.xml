@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel><title>Example Defence News</title><link>https://news.example.com/</link>
+<item><title>Navy commissions new frigate &mdash; sea trials done</title><link>https://news.example.com/2026/09/frigate-commissioned</link>
+<guid isPermaLink="false">news-1001</guid><pubDate>Mon, 21 Sep 2026 08:00:00 GMT</pubDate><dc:creator>A. Reporter</dc:creator>
+<description><![CDATA[<p>The frigate&nbsp;was commissioned. Budget: R&D & procurement.</p>]]></description></item>
+<item><title>Hypersonic glide vehicle test</title><link>/2026/09/hypersonic-test</link><guid>news-1002</guid><pubDate>Mon, 21 Sep 2026 09:30:00 +0000</pubDate>
+<content:encoded><![CDATA[<div>Full text about <b>hypersonic</b> test.</div>]]></content:encoded></item>
+</channel></rss>

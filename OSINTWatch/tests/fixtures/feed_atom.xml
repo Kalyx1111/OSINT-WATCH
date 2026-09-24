@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Atom Wire</title>
+<entry><title>Port call at Hambantota</title><link rel="alternate" href="https://atom.example.org/p/1"/><link rel="replies" href="https://atom.example.org/p/1/c"/>
+<id>tag:atom.example.org,2026:1</id><updated>2026-09-21T07:00:00Z</updated><published>2026-09-21T06:00:00Z</published>
+<author><name>Desk</name></author><summary type="html">&lt;p&gt;Ship &lt;b&gt;arrived&lt;/b&gt;.&lt;/p&gt;</summary></entry></feed>

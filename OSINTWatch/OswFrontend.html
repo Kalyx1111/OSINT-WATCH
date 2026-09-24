@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OSINT Watch</title>
+<meta name="osw-token" content="__OSW_TOKEN__">
+<style>
+  :root{
+    --bg:#10141a; --panel:#171d25; --panel-2:#1d2530; --raised:#212a35;
+    --line:#2a323d; --line-soft:#212831;
+    --text:#e7ecf1; --text-dim:#93a1af; --text-faint:#5e6b78;
+    --teal:#4fc1a6; --teal-dim:rgba(79,193,166,.14);
+    --amber:#e8a33d; --amber-dim:rgba(232,163,61,.16);
+    --red:#e2574c; --red-dim:rgba(226,87,76,.14);
+    --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:ui-monospace,"Cascadia Code","SF Mono",Consolas,"Liberation Mono",monospace;
+    --radius:6px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--font-ui);-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--teal-dim);color:var(--text)}
+  a{color:var(--teal);text-decoration:none}
+  a:hover{text-decoration:underline}
+  button,input,select,textarea{font:inherit;color:inherit}
+  :focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:0.001ms !important;transition-duration:0.001ms !important}}
+
+  .app{display:grid;grid-template-columns:216px 1fr;min-height:100vh}
+  @media (max-width:860px){.app{grid-template-columns:1fr}.nav{position:sticky;top:0;z-index:20;display:flex;flex-direction:row;overflow-x:auto;height:auto;padding:8px}
+    .nav .brand{display:none}.nav-list{display:flex;flex-direction:row;gap:4px;padding:0}.nav-list a{white-space:nowrap}
+    .nav-foot{display:none}}
+
+  .nav{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+  .brand{padding:20px 18px 14px;border-bottom:1px solid var(--line-soft)}
+  .brand .mark{font-family:var(--font-mono);font-size:12.5px;letter-spacing:.02em;color:var(--teal)}
+  .brand h1{margin:4px 0 0;font-size:18px;font-weight:650;letter-spacing:-.01em}
+  .nav-list{list-style:none;margin:0;padding:10px 8px;display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto}
+  .nav-list a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:5px;color:var(--text-dim);border-left:2px solid transparent;font-size:13.5px}
+  .nav-list a:hover{color:var(--text);background:var(--panel-2);text-decoration:none}
+  .nav-list a.active{color:var(--text);background:var(--panel-2);border-left-color:var(--teal)}
+  .nav-list .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55;flex:none}
+  .nav-foot{padding:12px 18px 16px;border-top:1px solid var(--line-soft);font-size:11.5px;color:var(--text-faint)}
+  .nav-foot .live{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-family:var(--font-mono)}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--text-faint)}
+  .live-dot.on{background:var(--teal);box-shadow:0 0 0 2px var(--teal-dim)}
+  .live-dot.off{background:var(--red)}
+
+  main{padding:22px 26px 60px;max-width:1040px}
+  .topline{display:flex;align-items:center;gap:18px;flex-wrap:wrap;color:var(--text-dim);font-size:12.5px;margin-bottom:18px;font-family:var(--font-mono)}
+  .topline b{color:var(--text);font-weight:600}
+  h2.title{font-size:20px;margin:0 0 4px;letter-spacing:-.01em}
+  .subtitle{color:var(--text-dim);font-size:13px;margin:0 0 20px;max-width:62ch}
+  section.view{display:none}
+  section.view.active{display:block}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
+  .panel h3{margin:0 0 3px;font-size:14px}
+  .panel .hint{color:var(--text-dim);font-size:12.5px;margin:0 0 12px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:640px){.grid2{grid-template-columns:1fr}}
+
+  label{display:block;font-size:12.5px;color:var(--text-dim);margin:0 0 5px}
+  input[type=text],input[type=number],input[type=password],input[type=time],textarea,select{
+    width:100%;background:var(--bg);border:1px solid var(--line);border-radius:5px;color:var(--text);padding:8px 10px;font-size:13.5px}
+  textarea{font-family:var(--font-mono);font-size:12.5px;resize:vertical;min-height:120px;line-height:1.5}
+  input:focus,textarea:focus,select:focus{border-color:var(--teal)}
+  .field{margin-bottom:12px}
+  .checkline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:8px 0}
+  .checkline input{width:auto}
+  .counter{font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint)}
+  .counter.over{color:var(--red)}
+
+  button.btn{background:var(--panel-2);border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:5px;cursor:pointer;font-size:13px}
+  button.btn:hover{background:var(--raised);border-color:#3a4552}
+  button.btn:active{transform:translateY(1px)}
+  button.btn.primary{background:var(--teal);border-color:var(--teal);color:#0b1512;font-weight:600}
+  button.btn.primary:hover{filter:brightness(1.06)}
+  button.btn.ghost{background:transparent}
+  button.btn.danger{border-color:var(--red);color:var(--red)}
+  button.btn:disabled{opacity:.5;cursor:default}
+  button.btn.small{padding:5px 10px;font-size:12px}
+
+  .chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:4px;padding:2px 7px;font-size:11.5px;color:var(--text-dim);font-family:var(--font-mono)}
+  .chip.kind-twitter{color:#8fb3e0}.chip.kind-telegram{color:#7fc7e8}.chip.kind-web{color:#b7a7e0}
+  .pill{display:inline-flex;align-items:center;border-radius:3px;padding:1px 6px;font-size:11px;border:1px solid var(--line);color:var(--text-dim)}
+
+  .status{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+  .status .d{width:7px;height:7px;border-radius:50%}
+  .status.ok .d{background:var(--teal)} .status.ok{color:var(--teal)}
+  .status.retrying .d{background:var(--amber)} .status.retrying{color:var(--amber)}
+  .status.failing .d{background:var(--red)} .status.failing{color:var(--red)}
+  .status.paused .d{background:var(--red)} .status.paused{color:var(--red)}
+  .status.waiting .d,.status.polling .d{background:var(--text-faint)} .status.waiting,.status.polling{color:var(--text-dim)}
+  .status.polling .d{animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+  .feed-list{display:flex;flex-direction:column;gap:10px}
+  .alert-card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:5px;padding:12px 14px}
+  .alert-card.urgent{border-left-color:var(--amber)}
+  .alert-card.new{animation:slidein .35s ease-out}
+  @keyframes slidein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .alert-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .alert-head .src{font-weight:600;font-size:13.5px}
+  .alert-head .time{margin-left:auto;color:var(--text-faint);font-family:var(--font-mono);font-size:11.5px;white-space:nowrap}
+  .urgent-tag{color:var(--amber);font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.03em}
+  .matched{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+  .alert-title{font-size:13.5px;margin:0 0 4px;color:var(--text)}
+  .alert-text{color:var(--text-dim);font-size:13px;margin:0 0 8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .alert-foot a{font-size:12.5px}
+  .empty{color:var(--text-dim);font-size:13.5px;padding:26px 4px;max-width:52ch}
+  .empty b{color:var(--text)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;color:var(--text-faint);font-weight:600;font-size:11.5px;text-transform:none;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.mono,.mono{font-family:var(--font-mono)}
+  td.err{color:var(--red);font-size:12px;max-width:260px}
+  .table-wrap{overflow-x:auto}
+
+  .errlist{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+  .errlist li{color:var(--red);font-size:12.5px;background:var(--red-dim);border:1px solid rgba(226,87,76,.35);border-radius:4px;padding:6px 9px}
+  .errlist li b{font-family:var(--font-mono);font-weight:600}
+
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:6px 14px;font-size:13px}
+  .kv div:nth-child(odd){color:var(--text-dim)}
+  .kv div:nth-child(even){font-family:var(--font-mono)}
+
+  .toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:100;max-width:340px}
+  .toast{background:var(--raised);border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:5px;padding:10px 12px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+  .toast.err{border-left-color:var(--red)}
+
+  .syntax{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);background:var(--bg);border:1px solid var(--line-soft);border-radius:5px;padding:10px 12px;line-height:1.7}
+  .syntax b{color:var(--text)}
+
+  .secret-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap}
+  .secret-row .field{flex:1;min-width:220px;margin-bottom:0}
+  .badge{font-size:11px;padding:1px 6px;border-radius:3px;border:1px solid var(--line);color:var(--text-dim)}
+  .badge.set{color:var(--teal);border-color:rgba(79,193,166,.4)}
+
+  .skeleton{color:var(--text-faint);font-size:13px;padding:10px 0;font-family:var(--font-mono)}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="nav">
+    <div class="brand">
+      <div class="mark">OSINT WATCH</div>
+      <h1>Signals Desk</h1>
+    </div>
+    <ul class="nav-list" id="navList">
+      <li><a href="#feed" data-view="feed"><span class="dot"></span>Live feed</a></li>
+      <li><a href="#sources" data-view="sources"><span class="dot"></span>Sources</a></li>
+      <li><a href="#watchlist" data-view="watchlist"><span class="dot"></span>Watchlist</a></li>
+      <li><a href="#notify" data-view="notify"><span class="dot"></span>Notifications</a></li>
+      <li><a href="#privacy" data-view="privacy"><span class="dot"></span>Privacy</a></li>
+      <li><a href="#settings" data-view="settings"><span class="dot"></span>Settings</a></li>
+      <li><a href="#diagnostics" data-view="diagnostics"><span class="dot"></span>Diagnostics</a></li>
+    </ul>
+    <div class="nav-foot">
+      <div class="live"><span class="live-dot off" id="liveDot"></span><span id="liveText">connecting…</span></div>
+      By Aryan / @EPureNest
+    </div>
+  </nav>
+
+  <main>
+    <div class="topline" id="topline">
+      <span class="skeleton">loading status…</span>
+    </div>
+
+    <section class="view" id="view-feed">
+      <h2 class="title">Live feed</h2>
+      <p class="subtitle">Every post that matches your watchlist and keywords, newest first. Click a source link to read the original post or page.</p>
+      <div class="row" style="margin-bottom:14px">
+        <button class="btn" id="btnPollAll">Poll all sources now</button>
+        <label class="checkline" style="margin:0"><input type="checkbox" id="chkBrowserNotify"> Also show a browser notification here</label>
+      </div>
+      <div class="feed-list" id="feedList"><div class="skeleton">loading feed…</div></div>
+      <div class="row" style="margin-top:12px"><button class="btn" id="btnLoadMore" style="display:none">Load older alerts</button></div>
+    </section>
+
+    <section class="view" id="view-sources">
+      <h2 class="title">Sources</h2>
+      <p class="subtitle">Every account, channel and site being watched, and whether it's currently reachable.</p>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn" id="btnPollAll2">Poll all now</button>
+        <button class="btn ghost" id="btnResetBackoff">Reset retry backoff</button>
+      </div>
+      <div class="panel"><div class="table-wrap"><table id="sourcesTable">
+        <thead><tr><th>Kind</th><th>Source</th><th>Status</th><th>Last OK</th><th>Items</th><th>Note</th><th></th></tr></thead>
+        <tbody><tr><td colspan="7" class="skeleton">loading sources…</td></tr></tbody>
+      </table></div></div>
+    </section>
+
+    <section class="view" id="view-watchlist">
+      <h2 class="title">Watchlist</h2>
+      <p class="subtitle">Up to 50 X accounts, 20 Telegram channels and 30 websites — one per line, with or without @ / URL. Only these are ever fetched.</p>
+      <div class="grid2">
+        <div class="panel">
+          <h3>X / Twitter accounts</h3>
+          <p class="hint">e.g. <span class="mono">nasa</span> or <span class="mono">@nasa</span> — <span class="counter" id="cnt-twitter">0/50</span></p>
+          <textarea id="wl-twitter" rows="10" placeholder="nasa&#10;spacepolicyonline"></textarea>
+        </div>
+        <div class="panel">
+          <h3>Telegram channels</h3>
+          <p class="hint">Public channels only — e.g. <span class="mono">durov</span> — <span class="counter" id="cnt-telegram">0/20</span></p>
+          <textarea id="wl-telegram" rows="10" placeholder="durov&#10;telegram"></textarea>
+        </div>
+        <div class="panel">
+          <h3>Websites</h3>
+          <p class="hint">RSS is used automatically when a site has one — <span class="counter" id="cnt-websites">0/30</span></p>
+          <textarea id="wl-websites" rows="10" placeholder="https://example.com/news"></textarea>
+        </div>
+        <div class="panel">
+          <h3>Keywords</h3>
+          <p class="hint"><span class="counter" id="cnt-keywords">0/50</span> — a post needs only one line to match unless it uses <span class="mono">+</span></p>
+          <textarea id="wl-keywords" rows="10" placeholder="hypersonic&#10;&quot;south china sea&quot;&#10;missil*&#10;pla navy + hambantota&#10;!nuclear test&#10;-friday sale"></textarea>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="syntax">
+          <div><b>word</b> — matches that whole word, any case</div>
+          <div><b>"a phrase"</b> — matches the exact phrase</div>
+          <div><b>missil*</b> — wildcard: missile, missiles, missilery…</div>
+          <div><b>cs:PLA</b> — case-sensitive term</div>
+          <div><b>a + b</b> — both terms must appear in the same post</div>
+          <div><b>!term</b> — urgent: alerts immediately, skips quiet hours and digest batching</div>
+          <div><b>-term</b> — exclusion: any post matching this is never alerted</div>
+        </div>
+      </div>
+      <div class="row"><button class="btn primary" id="btnSaveWatchlist">Save watchlist</button><span id="wlSavedNote" class="counter"></span></div>
+      <ul class="errlist" id="wlErrors" style="display:none"></ul>
+    </section>
+
+    <section class="view" id="view-notify">
+      <h2 class="title">Notifications</h2>
+      <p class="subtitle">Where alerts get delivered. The live feed and dashboard always update — these channels reach you when this tab isn't open.</p>
+      <div id="notifyPanels"><div class="skeleton">loading…</div></div>
+      <div class="panel">
+        <h3>Alert behaviour</h3>
+        <div class="grid2">
+          <div class="field"><label>Alert on</label>
+            <select id="s-alerts-mode"><option value="keywords">Keyword matches only</option><option value="all">Every new post</option></select></div>
+          <div class="field"><label>Ignore posts older than (hours)</label><input type="number" id="s-alerts-max_age_hours" min="1" max="168"></div>
+          <div class="field"><label>Send single alerts up to, then digest the rest</label><input type="number" id="s-alerts-burst_limit" min="1" max="20"></div>
+          <div class="field"><label class="checkline" style="margin:0"><input type="checkbox" id="s-alerts-quiet_enabled"> Quiet hours (non-urgent alerts held, shown in the feed only)</label></div>
+          <div class="field"><label>Quiet from</label><input type="time" id="s-alerts-quiet_start"></div>
+          <div class="field"><label>Quiet until</label><input type="time" id="s-alerts-quiet_end"></div>
+        </div>
+        <button class="btn primary" id="btnSaveAlerts">Save</button>
+      </div>
+    </section>
+
+    <section class="view" id="view-privacy">
+      <h2 class="title">Privacy</h2>
+      <p class="subtitle">Controls what the destination sites and services can see about this computer.</p>
+      <div class="panel">
+        <h3>Fetching mode</h3>
+        <p class="hint" id="privacyStateNote">checking…</p>
+        <div class="field"><label>Mode</label>
+          <select id="p-privacy-mode"><option value="strict">Strict — never fetch without a proxy</option><option value="open">Open — fetch directly if no proxy is set</option></select></div>
+        <div class="field"><label>Proxy (Tor / SOCKS5 / HTTP) — host:port, no credentials here</label>
+          <input type="text" id="p-privacy-proxy" placeholder="127.0.0.1:9150"></div>
+        <div class="row">
+          <button class="btn" id="btnDetectTor">Detect local Tor</button>
+          <button class="btn" id="btnEgress">Check outgoing IP</button>
+          <span class="counter" id="egressNote"></span>
+        </div>
+        <label class="checkline"><input type="checkbox" id="p-privacy-isolate_streams"> New Tor circuit per destination site</label>
+        <label class="checkline"><input type="checkbox" id="p-privacy-route_notifiers"> Send notifications through the proxy too</label>
+        <label class="checkline"><input type="checkbox" id="p-privacy-respect_robots"> Respect robots.txt on websites</label>
+        <label class="checkline"><input type="checkbox" id="p-privacy-allow_private"> Allow local/private network addresses (disables the SSRF guard — advanced)</label>
+        <div class="field" style="margin-top:10px"><label>User-Agent sent with every request</label><input type="text" id="p-privacy-user_agent"></div>
+        <button class="btn primary" id="btnSavePrivacy">Save</button>
+      </div>
+      <div class="panel">
+        <h3>Secrets</h3>
+        <p class="hint">Stored on this computer only, in an owner-only file. Never sent anywhere except the service each key belongs to.</p>
+        <div id="secretsList"><div class="skeleton">loading…</div></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-settings">
+      <h2 class="title">Settings</h2>
+      <div class="panel">
+        <h3>Polling</h3>
+        <p class="hint">How often each source type is checked, in seconds.</p>
+        <div class="grid2">
+          <div class="field"><label>Telegram (45–3600s)</label><input type="number" id="s-polling-telegram" min="45" max="3600"></div>
+          <div class="field"><label>X / Twitter (60–7200s)</label><input type="number" id="s-polling-twitter" min="60" max="7200"></div>
+          <div class="field"><label>Websites (120–86400s)</label><input type="number" id="s-polling-web" min="120" max="86400"></div>
+          <div class="field"><label>Worker threads (0 = auto)</label><input type="number" id="s-polling-workers" min="0" max="16"></div>
+        </div>
+        <button class="btn primary" id="btnSavePolling">Save</button>
+      </div>
+      <div class="panel">
+        <h3>Storage</h3>
+        <div class="field" style="max-width:260px"><label>Keep posts for (days)</label><input type="number" id="s-storage-retention_days" min="1" max="365"></div>
+        <button class="btn primary" id="btnSaveStorage">Save</button>
+      </div>
+      <div class="panel">
+        <h3>Open links with</h3>
+        <p class="hint">Leave blank to just open in your default browser. Or give a command, e.g. <span class="mono">"C:\Program Files\Mozilla Firefox\firefox.exe"</span></p>
+        <input type="text" id="s-links-opener" placeholder="(default browser)">
+        <div class="row" style="margin-top:10px"><button class="btn primary" id="btnSaveOpener">Save</button></div>
+      </div>
+      <div class="panel">
+        <h3>Dashboard server <span class="badge">advanced</span></h3>
+        <p class="hint">Changing the address can lock you out of this page — a non-local address needs a TLS certificate.</p>
+        <div class="grid2">
+          <div class="field"><label>Host</label><input type="text" id="s-server-host"></div>
+          <div class="field"><label>Port</label><input type="number" id="s-server-port" min="1024" max="65535"></div>
+          <div class="field"><label>TLS certificate file</label><input type="text" id="s-server-tls_cert"></div>
+          <div class="field"><label>TLS key file</label><input type="text" id="s-server-tls_key"></div>
+        </div>
+        <button class="btn" id="btnSaveServer">Save (restart required)</button>
+      </div>
+    </section>
+
+    <section class="view" id="view-diagnostics">
+      <h2 class="title">Diagnostics</h2>
+      <div class="panel"><h3>This machine</h3><div class="kv" id="hwKv"><div class="skeleton">loading…</div></div></div>
+      <div class="panel">
+        <h3>Maintenance</h3>
+        <div class="row">
+          <button class="btn" id="btnBackup">Back up database</button>
+          <button class="btn" id="btnOptimize">Optimize &amp; prune old items</button>
+          <button class="btn" id="btnExport">Export settings &amp; watchlist</button>
+        </div>
+        <p class="hint" id="maintNote" style="margin-top:10px"></p>
+      </div>
+      <div class="panel"><h3>Log notes</h3><div id="loadNotes" class="kv"></div></div>
+    </section>
+  </main>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>window.OSW_TOKEN = document.querySelector('meta[name=osw-token]').content;</script>
+<script>
+(function(){
+"use strict";
+const $ = (s, el) => (el||document).querySelector(s);
+const $$ = (s, el) => Array.from((el||document).querySelectorAll(s));
+const esc = s => (s==null?"":String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function api(path, opts){
+  opts = opts || {};
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if (opts.method && opts.method !== 'GET') headers['X-Osw-Token'] = window.OSW_TOKEN;
+  const res = await fetch(path, Object.assign({}, opts, {headers}));
+  let data = null;
+  try { data = await res.json(); } catch(e) {}
+  if (!res.ok) {
+    const msg = (data && (data.error || (data.errors && data.errors.map(e => typeof e==='string'?e:(e.list?`${e.list}: ${e.entry?('"'+e.entry+'" — '):''}${e.error}`:JSON.stringify(e))).join('; ')))) || ('HTTP '+res.status);
+    const err = new Error(msg); err.status = res.status; err.data = data; throw err;
+  }
+  return data;
+}
+
+function toast(msg, isErr){
+  const el = document.createElement('div');
+  el.className = 'toast' + (isErr ? ' err' : '');
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), 4200);
+}
+
+function relTime(sec){
+  if (!sec) return '—';
+  const d = Math.max(0, Math.floor(Date.now()/1000) - sec);
+  if (d < 5) return 'just now';
+  if (d < 60) return d+'s ago';
+  if (d < 3600) return Math.floor(d/60)+'m ago';
+  if (d < 86400) return Math.floor(d/3600)+'h ago';
+  return Math.floor(d/86400)+'d ago';
+}
+
+// ---------------------------------------------------------------- routing
+const views = $$('.view');
+function setView(name){
+  views.forEach(v => v.classList.toggle('active', v.id === 'view-'+name));
+  $$('#navList a').forEach(a => a.classList.toggle('active', a.dataset.view === name));
+  loaders[name] && loaders[name]();
+}
+window.addEventListener('hashchange', () => setView((location.hash||'#feed').slice(1)));
+
+// ---------------------------------------------------------------- status strip
+async function loadStatus(){
+  try{
+    const s = await api('/api/status');
+    const src = await api('/api/sources').catch(()=>[]);
+    const ok = src.filter(x=>x.state==='ok').length;
+    const bad = src.filter(x=>x.state==='failing'||x.state==='paused').length;
+    const retry = src.filter(x=>x.state==='retrying').length;
+    $('#topline').innerHTML =
+      `<span><b>${src.length}</b> sources</span>` +
+      `<span><b>${ok}</b> ok${retry?` · <b>${retry}</b> retrying`:''}${bad?` · <b style="color:var(--red)">${bad}</b> stuck`:''}</span>` +
+      `<span><b>${s.counts.alerts_24h}</b> alerts / 24h</span>` +
+      `<span>${s.privacy.mode==='strict'?(s.privacy.proxy_set?'proxy active':'<b style="color:var(--red)">fetching paused — no proxy</b>'):(s.privacy.proxy_set?'proxy active':'direct connections')}</span>`;
+    if (s.load_notes && s.load_notes.length){
+      $('#loadNotes').innerHTML = s.load_notes.map(n=>`<div>note</div><div style="font-family:var(--font-ui)">${esc(typeof n==='string'?n:JSON.stringify(n))}</div>`).join('');
+    } else { $('#loadNotes').innerHTML = '<div>—</div><div style="font-family:var(--font-ui)">nothing to report</div>'; }
+    return {s, src};
+  } catch(e){ $('#topline').innerHTML = `<span style="color:var(--red)">status unavailable: ${esc(e.message)}</span>`; }
+}
+
+// ---------------------------------------------------------------- live feed
+let oldestAlertId = null;
+function alertCard(a, isNew){
+  const kindTag = {twitter:'X', telegram:'TG', web:'WEB', digest:'—', test:'TEST'}[a.kind] || a.kind.toUpperCase();
+  const chips = (a.matched||[]).filter(m=>m!=='(all posts)').map(m=>`<span class="pill">${esc(m)}</span>`).join('');
+  const url = a.url ? `<a href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">Open source</a>` : '';
+  return `<div class="alert-card ${a.urgent?'urgent':''} ${isNew?'new':''}">
+    <div class="alert-head">
+      <span class="chip kind-${a.kind}">${kindTag}</span>
+      <span class="src">${esc(a.source||a.title||'source')}</span>
+      ${a.urgent?'<span class="urgent-tag">URGENT</span>':''}
+      <span class="time" title="${new Date((a.created||a.published||0)*1000).toLocaleString()}">${relTime(a.created||a.published)}</span>
+    </div>
+    ${chips?`<div class="matched">${chips}</div>`:''}
+    ${a.title?`<p class="alert-title">${esc(a.title)}</p>`:''}
+    ${a.text?`<p class="alert-text">${esc(a.text)}</p>`:''}
+    <div class="alert-foot">${url}</div>
+  </div>`;
+}
+async function loadFeed(){
+  const list = $('#feedList');
+  try{
+    const rows = await api('/api/alerts?limit=50');
+    if (!rows.length){
+      list.innerHTML = `<div class="empty"><b>No alerts yet.</b><br>Add sources and a few keywords in Watchlist, then matching posts will appear here the moment they're seen.</div>`;
+      $('#btnLoadMore').style.display = 'none';
+      return;
+    }
+    list.innerHTML = rows.map(a=>alertCard(a,false)).join('');
+    oldestAlertId = rows[rows.length-1].alert_id;
+    $('#btnLoadMore').style.display = rows.length>=50 ? '' : 'none';
+  } catch(e){ list.innerHTML = `<div class="empty" style="color:var(--red)">Could not load the feed: ${esc(e.message)}</div>`; }
+}
+$('#btnLoadMore').addEventListener('click', async () => {
+  if (!oldestAlertId) return;
+  const rows = await api('/api/alerts?before_id='+oldestAlertId+'&limit=50').catch(e=>{toast(e.message,true);return [];});
+  if (!rows.length){ $('#btnLoadMore').style.display='none'; return; }
+  $('#feedList').insertAdjacentHTML('beforeend', rows.map(a=>alertCard(a,false)).join(''));
+  oldestAlertId = rows[rows.length-1].alert_id;
+  if (rows.length<50) $('#btnLoadMore').style.display='none';
+});
+
+// ---------------------------------------------------------------- sources
+async function loadSources(){
+  const tbody = $('#sourcesTable tbody');
+  try{
+    const rows = await api('/api/sources');
+    if (!rows.length){
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><b>No sources yet.</b><br>Add X accounts, Telegram channels or websites under Watchlist.</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(r=>`<tr>
+      <td><span class="chip kind-${r.kind}">${({twitter:'X',telegram:'TG',web:'WEB'})[r.kind]||r.kind}</span></td>
+      <td class="mono">${esc(r.label||r.target)}</td>
+      <td><span class="status ${r.state}"><span class="d"></span>${r.state}</span></td>
+      <td class="mono">${relTime(r.last_ok)}</td>
+      <td class="mono">${r.items}</td>
+      <td class="err" title="${esc(r.error)}">${esc((r.error||'').slice(0,70))}</td>
+      <td><button class="btn small" data-poll="${esc(r.id)}">Poll now</button></td>
+    </tr>`).join('');
+    $$('button[data-poll]', tbody).forEach(b => b.addEventListener('click', async () => {
+      b.disabled = true;
+      try { await api('/api/sources/poll', {method:'POST', body: JSON.stringify({id:b.dataset.poll})}); toast('Queued'); }
+      catch(e){ toast(e.message, true); }
+      setTimeout(loadSources, 1500);
+    }));
+  } catch(e){ tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red)">${esc(e.message)}</td></tr>`; }
+}
+async function pollAll(){ try{ const r = await api('/api/sources/poll', {method:'POST', body:'{}'}); toast('Polling '+r.queued+' source(s)'); setTimeout(loadSources,1500); } catch(e){ toast(e.message,true); } }
+$('#btnPollAll').addEventListener('click', pollAll);
+$('#btnPollAll2').addEventListener('click', pollAll);
+$('#btnResetBackoff').addEventListener('click', async () => { try{ const r = await api('/api/sources/reset-backoff',{method:'POST'}); toast('Reset '+r.reset+' source(s)'); loadSources(); } catch(e){ toast(e.message,true); } });
+
+// ---------------------------------------------------------------- watchlist
+const WL_FIELDS = {twitter:'wl-twitter', telegram:'wl-telegram', websites:'wl-websites', keywords:'wl-keywords'};
+const WL_LIMITS = {twitter:50, telegram:20, websites:30, keywords:50};
+function linesOf(id){ return $('#'+id).value.split('\n').map(s=>s.trim()).filter(Boolean); }
+function updateCounts(){
+  for (const key in WL_FIELDS){
+    const n = linesOf(WL_FIELDS[key]).length, cap = WL_LIMITS[key];
+    const c = $('#cnt-'+key); c.textContent = n+'/'+cap; c.classList.toggle('over', n>cap);
+  }
+}
+async function loadWatchlist(){
+  try{
+    const wl = await api('/api/watchlist');
+    for (const key in WL_FIELDS) $('#'+WL_FIELDS[key]).value = (wl[key]||[]).join('\n');
+    updateCounts();
+  } catch(e){ toast('Could not load watchlist: '+e.message, true); }
+}
+Object.values(WL_FIELDS).forEach(id => $('#'+id).addEventListener('input', updateCounts));
+$('#btnSaveWatchlist').addEventListener('click', async () => {
+  const body = {}; for (const key in WL_FIELDS) body[key] = linesOf(WL_FIELDS[key]);
+  const errBox = $('#wlErrors');
+  try{
+    await api('/api/watchlist', {method:'PUT', body: JSON.stringify(body)});
+    errBox.style.display = 'none'; errBox.innerHTML = '';
+    toast('Watchlist saved'); loadSources();
+  } catch(e){
+    if (e.data && e.data.errors){
+      errBox.innerHTML = e.data.errors.map(x => typeof x === 'string' ? `<li>${esc(x)}</li>` :
+        `<li><b>${esc(x.list)}</b>${x.entry?` — "${esc(x.entry)}"`:''}: ${esc(x.error)}</li>`).join('');
+      errBox.style.display = '';
+      toast('Fix the highlighted entries before saving', true);
+    } else toast(e.message, true);
+  }
+});
+
+// ---------------------------------------------------------------- notify
+const NOTIFY_META = {desktop:['Desktop notifications','This computer\u2019s own notification popup.'],
+  ntfy:['Phone push (ntfy)','Free push app for iOS and Android - no account needed.'],
+  tgbot:['Telegram bot','A bot you create sends alerts to a Telegram chat.'],
+  termux:['Android (Termux)','Only available when this runs inside Termux on Android.']};
+async function loadNotify(){
+  try{
+    const st = await api('/api/status');
+    await api('/api/secrets');
+    const cfg = await api('/api/settings');
+    const wrap = $('#notifyPanels');
+    wrap.innerHTML = Object.keys(NOTIFY_META).map(ch => {
+      const n = st.notify[ch], label = NOTIFY_META[ch][0], desc = NOTIFY_META[ch][1];
+      return `<div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <div><h3>${label}</h3><p class="hint">${desc}</p></div>
+          <label class="checkline" style="margin:0"><input type="checkbox" data-ch="${ch}" class="chkNotify" ${n.enabled?'checked':''}> Enabled</label>
+        </div>
+        <div class="row">
+          <span class="badge ${n.configured?'set':''}">${n.configured?'ready':'not set up'}</span>
+          ${n.last_ok?`<span class="counter">last sent ${relTime(n.last_ok)}</span>`:''}
+          ${n.last_err?`<span class="counter" style="color:var(--red)">${esc(n.last_err)}</span>`:''}
+          <button class="btn small" data-test="${ch}">Send test</button>
+        </div>
+      </div>`;
+    }).join('');
+    $$('.chkNotify', wrap).forEach(c => c.addEventListener('change', async () => {
+      const patch = {notify:{}}; patch.notify[c.dataset.ch] = c.checked;
+      try{ await api('/api/settings',{method:'PUT', body:JSON.stringify(patch)}); toast('Saved'); }
+      catch(e){ toast(e.message,true); c.checked=!c.checked; }
+    }));
+    $$('button[data-test]', wrap).forEach(b => b.addEventListener('click', async () => {
+      b.disabled = true; b.textContent = 'Sending…';
+      try{ const r = await api('/api/notify/test/'+b.dataset.test, {method:'POST'}); toast(r.ok?'Test sent — check that channel':'Failed: '+r.detail, !r.ok); }
+      catch(e){ toast(e.message, true); }
+      b.disabled = false; b.textContent = 'Send test'; loadNotify();
+    }));
+    fillForm(cfg);
+  } catch(e){ $('#notifyPanels').innerHTML = `<div class="empty" style="color:var(--red)">${esc(e.message)}</div>`; }
+}
+
+// ---------------------------------------------------------------- generic settings form binding
+function fillForm(cfg){
+  for (const sec in cfg){
+    for (const key in cfg[sec]){
+      const el = document.getElementById('s-'+sec+'-'+key);
+      if (!el) continue;
+      if (el.type === 'checkbox') el.checked = !!cfg[sec][key]; else el.value = cfg[sec][key];
+    }
+  }
+}
+function readSection(sec, keys){
+  const out = {};
+  keys.forEach(key => {
+    const el = document.getElementById('s-'+sec+'-'+key);
+    if (!el) return;
+    out[key] = el.type === 'checkbox' ? el.checked : (el.type === 'number' ? Number(el.value) : el.value);
+  });
+  return out;
+}
+async function saveSection(sec, keys, btnId){
+  const btn = $('#'+btnId); const old = btn.textContent; btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const patch = {}; patch[sec] = readSection(sec, keys);
+    const r = await api('/api/settings', {method:'PUT', body: JSON.stringify(patch)});
+    fillForm(r.settings); toast('Saved');
+  } catch(e){ toast(e.message, true); }
+  btn.disabled = false; btn.textContent = old;
+}
+$('#btnSaveAlerts').addEventListener('click', () => saveSection('alerts', ['mode','max_age_hours','burst_limit','quiet_enabled','quiet_start','quiet_end'], 'btnSaveAlerts'));
+$('#btnSavePolling').addEventListener('click', () => saveSection('polling', ['telegram','twitter','web','workers'], 'btnSavePolling'));
+$('#btnSaveStorage').addEventListener('click', () => saveSection('storage', ['retention_days'], 'btnSaveStorage'));
+$('#btnSaveOpener').addEventListener('click', () => saveSection('links', ['opener'], 'btnSaveOpener'));
+$('#btnSaveServer').addEventListener('click', () => saveSection('server', ['host','port','tls_cert','tls_key'], 'btnSaveServer'));
+
+// ---------------------------------------------------------------- privacy + secrets
+async function loadPrivacy(){
+  try{
+    const cfg = await api('/api/settings');
+    fillForm(cfg);
+    const st = await api('/api/status');
+    const p = st.privacy;
+    $('#privacyStateNote').innerHTML = p.paused
+      ? `<b style="color:var(--red)">Fetching is paused</b> — strict mode with no proxy set. Add one below.`
+      : (p.proxy_set ? `Routing through <span class="mono">${esc(p.proxy)}</span>${p.isolate_streams?' with per-site isolation':''}.`
+                     : `Fetching directly with this computer's real IP address.`);
+  } catch(e){ toast(e.message, true); }
+  await loadSecrets();
+}
+$('#btnSavePrivacy').addEventListener('click', () => saveSection('privacy', ['mode','proxy','isolate_streams','route_notifiers','respect_robots','allow_private','user_agent'], 'btnSavePrivacy'));
+$('#btnDetectTor').addEventListener('click', async () => {
+  const b = $('#btnDetectTor'); b.disabled = true; b.textContent = 'Detecting…';
+  try{
+    const r = await api('/api/tor');
+    if (r.found && r.found.length){ $('#p-privacy-proxy').value = r.found[0].proxy; toast('Found '+r.found[0].name+' — filled in below, click Save'); }
+    else toast('No local Tor listener found on 9150/9050', true);
+  } catch(e){ toast(e.message, true); }
+  b.disabled = false; b.textContent = 'Detect local Tor';
+});
+$('#btnEgress').addEventListener('click', async () => {
+  $('#egressNote').textContent = 'checking…';
+  try{ const r = await api('/api/privacy/egress'); $('#egressNote').textContent = `sites currently see: ${r.ip}${r.is_tor?' (Tor exit)':''}`; }
+  catch(e){ $('#egressNote').textContent = ''; toast(e.message, true); }
+});
+
+const SECRET_LABELS = {X_BEARER_TOKEN:'X API bearer token (official API)', TWITTERAPI_KEY:'twitterapi.io API key',
+  NTFY_TOPIC:'ntfy topic', NTFY_TOKEN:'ntfy access token (only if your server needs one)',
+  TG_BOT_TOKEN:'Telegram bot token', TG_CHAT_ID:'Telegram chat ID to alert', PROXY_URL:'Proxy URL with credentials (optional, overrides Privacy proxy)'};
+async function loadSecrets(){
+  try{
+    const st = await api('/api/secrets');
+    $('#secretsList').innerHTML = Object.keys(SECRET_LABELS).map(name => {
+      const s = st[name] || {set:false};
+      return `<div class="secret-row">
+        <div class="field"><label>${esc(SECRET_LABELS[name])} <span class="badge ${s.set?'set':''}">${s.set?('set via '+s.source):'not set'}</span></label>
+          <input type="password" autocomplete="off" data-secret="${name}" placeholder="${s.set?'•••••••• (leave blank to keep)':s.hint}"></div>
+        <button class="btn small" data-savesecret="${name}">Save</button>
+        ${s.set?`<button class="btn small danger" data-clearsecret="${name}">Clear</button>`:''}
+      </div>`;
+    }).join('');
+    $$('button[data-savesecret]', $('#secretsList')).forEach(b => b.addEventListener('click', async () => {
+      const name = b.dataset.savesecret, input = $(`input[data-secret="${name}"]`);
+      if (!input.value) { toast('Enter a value first', true); return; }
+      try{ await api('/api/secrets/'+name, {method:'PUT', body: JSON.stringify({value: input.value})}); toast('Saved'); loadSecrets(); }
+      catch(e){ toast(e.message, true); }
+    }));
+    $$('button[data-clearsecret]', $('#secretsList')).forEach(b => b.addEventListener('click', async () => {
+      try{ await api('/api/secrets/'+b.dataset.clearsecret, {method:'DELETE'}); toast('Cleared'); loadSecrets(); }
+      catch(e){ toast(e.message, true); }
+    }));
+  } catch(e){ $('#secretsList').innerHTML = `<div class="empty" style="color:var(--red)">${esc(e.message)}</div>`; }
+}
+
+// ---------------------------------------------------------------- diagnostics
+async function loadDiagnostics(){
+  try{
+    const h = await api('/api/hardware');
+    $('#hwKv').innerHTML = `
+      <div>OS</div><div style="font-family:var(--font-ui)">${esc(h.os)}</div>
+      <div>Python</div><div>${esc(h.python)}</div>
+      <div>CPU cores</div><div>${h.cpu_cores}</div>
+      <div>RAM</div><div>${h.ram_mb ? Math.round(h.ram_mb/1024*10)/10+' GB' : 'unknown'}</div>
+      <div>Free disk</div><div>${h.disk_free_gb} GB</div>
+      <div>Internet reachable</div><div>${h.internet?'yes':'no'}</div>
+      <div>Local Tor</div><div>${h.tor_detected.length?h.tor_detected.map(t=>t.name).join(', '):'not detected'}</div>
+      <div>Suggested worker threads</div><div>${h.suggested_workers}</div>
+      <div>Desktop notify backend</div><div style="font-family:var(--font-ui)">${esc(h.notify_backend)}</div>`;
+  } catch(e){ $('#hwKv').innerHTML = `<div style="color:var(--red)">${esc(e.message)}</div>`; }
+}
+$('#btnBackup').addEventListener('click', async () => { try{ const r = await api('/api/maintenance/backup',{method:'POST'}); $('#maintNote').textContent = 'Backed up to data/backups/'+r.file; } catch(e){ toast(e.message,true); } });
+$('#btnOptimize').addEventListener('click', async () => { try{ const r = await api('/api/maintenance/optimize',{method:'POST'}); $('#maintNote').textContent = `Pruned ${r.pruned} old item(s). Integrity: ${r.integrity.join(', ')}`; } catch(e){ toast(e.message,true); } });
+$('#btnExport').addEventListener('click', async () => {
+  try{
+    const data = await api('/api/export');
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'osint-watch-export.json'; a.click();
+    URL.revokeObjectURL(a.href);
+  } catch(e){ toast(e.message, true); }
+});
+
+// ---------------------------------------------------------------- browser notifications + SSE
+const BN_KEY = 'osw_browser_notify';
+const bnChk = $('#chkBrowserNotify');
+bnChk.checked = localStorage.getItem(BN_KEY) === '1';
+bnChk.addEventListener('change', async () => {
+  if (bnChk.checked && window.Notification && Notification.permission !== 'granted'){
+    const p = await Notification.requestPermission();
+    if (p !== 'granted'){ bnChk.checked = false; toast('Browser notification permission was not granted', true); return; }
+  }
+  localStorage.setItem(BN_KEY, bnChk.checked ? '1' : '0');
+});
+
+function connectStream(){
+  const es = new EventSource('/api/alerts/stream');
+  es.onopen = () => { $('#liveDot').className = 'live-dot on'; $('#liveText').textContent = 'live'; };
+  es.onerror = () => { $('#liveDot').className = 'live-dot off'; $('#liveText').textContent = 'reconnecting…'; };
+  es.onmessage = (ev) => {
+    let data; try { data = JSON.parse(ev.data); } catch(e){ return; }
+    if (data.type !== 'alert') return;
+    if (location.hash === '#feed' || location.hash === ''){
+      const empty = $('#feedList .empty'); if (empty) $('#feedList').innerHTML = '';
+      $('#feedList').insertAdjacentHTML('afterbegin', alertCard(data, true));
+    }
+    if (bnChk.checked && window.Notification && Notification.permission === 'granted' && data.kind !== 'test'){
+      const n = new Notification((data.urgent?'URGENT · ':'')+(data.source||'OSINT Watch'), {body: (data.title||data.text||'').slice(0,180), tag: 'osw-'+data.id});
+      if (data.url) n.onclick = () => { window.open(data.url, '_blank'); n.close(); };
+    }
+    loadStatus();
+  };
+}
+
+// ---------------------------------------------------------------- boot
+const loaders = {feed: loadFeed, sources: loadSources, watchlist: loadWatchlist, notify: loadNotify, privacy: loadPrivacy, settings: async()=>fillForm(await api('/api/settings')), diagnostics: loadDiagnostics};
+setView((location.hash||'#feed').slice(1));
+loadStatus();
+setInterval(loadStatus, 20000);
+connectStream();
+})();
+</script>
+</body>
+</html>

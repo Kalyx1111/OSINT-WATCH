@@ -1,0 +1,7 @@
+# OSINT Watch - Python dependencies. Tested with Python 3.10-3.12.
+# Install: pip install -r OswRequirements.txt   (offline: see wheels/README.txt)
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+pydantic>=2,<3
+httpx[socks]>=0.27,<1
+beautifulsoup4>=4.12,<5
